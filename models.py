@@ -16,3 +16,11 @@ class Reports(BASE):
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     resume_text = Column(Text)
     result = Column(Text)
+
+
+from db import engine
+
+if __name__ == "__main__":
+    print("Creating tables in TiDB...")
+    BASE.metadata.create_all(bind=engine)
+    print("Tables created successfully!")
