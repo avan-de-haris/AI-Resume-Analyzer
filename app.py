@@ -62,6 +62,31 @@ def dashboard():
         resume_text = request.form.get('resume')
 
         file = request.files.get('file')
+        # File handling
+        if file and file.filename != '':
+            if file.filename.endswith('.pdf'):
+                try:
+                    pdf_reader = PyPDF2.PdfReader(file)
+                    text = ''
+                    for page in pdf_reader.pages:
+                        text += page.extract_text()
+                    resume_text = text
+                except Exception as e:
+                    result = {"error": f"Error reading PDF file: {str(e)}"}
+            
+            elif file.filename.endswith('.docx'):
+                try:
+                    doc = docx.Document(file)
+                    text = ''
+                    for para in doc.paragraphs:
+                        text += para.text + '\n'
+                    resume_text = text
+                except Exception as e:
+                    result = {"error": f"Error reading DOCX file: {str(e)}"}
+            else:
+                result = {"error": "Unsupported file format. Please upload a PDF or DOCX file."}
 
+    if resume_text and user_goal:
+        ...
 if __name__ == '__main__':
     app.run(debug=True)
