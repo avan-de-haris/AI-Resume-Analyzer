@@ -1,0 +1,49 @@
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# Secrets and environment variables
+.env
+*.env
+*.pem
+*.crt
+
+# Python cache & build files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# macOS metadata
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Editor settings
+.vscode/
+.idea/
+
+# Database dumps & queries
+*.sql
+*.sqlite3
+*.db
+
+# Uploads & temporary test data
+uploads/
+temp/
