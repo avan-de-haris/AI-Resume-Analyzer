@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Resume Analyzer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header>
+        <h1>AI Resume Analyzer</h1>
+        <div class="container">
+            <nav>
+                <a href="/history">History</a>
+                <a href="/dashboard">Dashboard</a>
+                <a href="/logout">Logout</a>
+            </nav>
+        </div>
+    </header>
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+    <footer>
+        <p>&copy; 2026 AI Resume Analyzer. All rights reserved.</p>
+    </footer>
+</body>
+</html>
