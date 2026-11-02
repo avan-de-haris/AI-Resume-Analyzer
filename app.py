@@ -26,6 +26,7 @@ def signup():
     if request.method == 'POST':
         email = request.form.get('email')
         password = request.form.get('password')
+        username = email.split('@')[0]  # Use the part before '@' as the username
 
         # Check if the user already exists
         existing_user = db.query(models.User).filter_by(email=email).first()
@@ -61,6 +62,8 @@ def dashboard():
     if "user" not in session:
         return redirect('/login')
     result = None
+    resume_text = None
+    user_goal = None
 
     if request.method == 'POST':
         user_goal = request.form.get('role')
@@ -107,6 +110,7 @@ def dashboard():
 
     return render_template('dashboard.html', user=session['user'], result=result)
 
+
 # History route
 @app.route('/history')
 def history():
@@ -114,23 +118,25 @@ def history():
         return redirect('/login')
 
     db = SessionLocal()
-    user = db.query(models.User).filter_by(email=session['user']).first()
-    reports = db.query(models.Reports).filter_by(user_id=user.id).all()
+    try:
+        user = db.query(models.User).filter_by(email=session['user']).first()
+        reports = db.query(models.Reports).filter_by(user_id=user.id).all() if user else []
 
-    # Convert the result from JSON string to Python dictionary for each report
-    parsed_result = []
-    for r in reports:
-        try:
-            parsed_result = json.loads(r.result)
-        except json.JSONDecodeError:
-            parsed_result = []
+        history_list = []
+        for r in reports:
+            try:
+                report_data = json.loads(r.result)
+            except (json.JSONDecodeError, TypeError):
+                report_data = {}
 
-        parsed_result.append({
-            "resume": r.resume_text,
-            "result": parsed_result
-        })
+            history_list.append({
+                "resume": r.resume_text,
+                "result": report_data
+            })
+    finally:
+        db.close()
 
-    return render_template('history.html', reports=parsed_result)
+    return render_template('history.html', reports=history_list)
 
 # Logout route
 @app.route('/logout')

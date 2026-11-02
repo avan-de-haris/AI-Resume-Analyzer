@@ -3,6 +3,9 @@ import certifi
 import ssl
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
+from dotenv import load_dotenv
+
+load_dotenv()  # Load environment variables from .env file
 
 # Database configuration
 DATABASE_URL = os.getenv("DATABASE_URL")
