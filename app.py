@@ -1,3 +1,5 @@
+import os
+import ai
 from flask import Flask, render_template, request, redirect, session
 from db import engine, BASE, SessionLocal
 import models
@@ -6,6 +8,9 @@ import docx
 import json
 
 app = Flask(__name__)
+app.secret_key = os.getenv('SECRET_KEY')  # Use the secret key from the .env file
+
+BASE.metadata.create_all(bind=engine)  # Create tables if they don't exist
 
 # Home route
 @app.route('/')
@@ -87,6 +92,52 @@ def dashboard():
                 result = {"error": "Unsupported file format. Please upload a PDF or DOCX file."}
 
     if resume_text and user_goal:
-        ...
+        try:
+            result = ai.analyze_resume(resume_text, user_goal)
+
+            # save the result to the database
+            db = SessionLocal()
+            user = db.query(models.User).filter_by(email=session['user']).first()
+
+            report = models.Reports(user_id=user.id, resume_text=resume_text, result=json.dumps(result))
+            db.add(report)
+            db.commit()
+        except Exception as e:
+            result = {"error": f"AI Error: {str(e)}"}
+
+    return render_template('dashboard.html', user=session['user'], result=result)
+
+# History route
+@app.route('/history')
+def history():
+    if "user" not in session:
+        return redirect('/login')
+
+    db = SessionLocal()
+    user = db.query(models.User).filter_by(email=session['user']).first()
+    reports = db.query(models.Reports).filter_by(user_id=user.id).all()
+
+    # Convert the result from JSON string to Python dictionary for each report
+    parsed_result = []
+    for r in reports:
+        try:
+            parsed_result = json.loads(r.result)
+        except json.JSONDecodeError:
+            parsed_result = []
+
+        parsed_result.append({
+            "resume": r.resume_text,
+            "result": parsed_result
+        })
+
+    return render_template('history.html', reports=parsed_result)
+
+# Logout route
+@app.route('/logout')
+def logout():
+    session.pop('user', None)
+    return redirect('/login')
+
+
 if __name__ == '__main__':
     app.run(debug=True)

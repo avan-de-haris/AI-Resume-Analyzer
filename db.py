@@ -1,14 +1,11 @@
+import os
 import certifi
 import ssl
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 # Database configuration
-DATABASE_URL = (
-    "mysql+pymysql://YuwhQJrgWGst6e8.root:bJDbpflhsqF2Z49k"
-    "@gateway01.ap-southeast-1.prod.aws.tidbcloud.com:4000/test"
-    "?ssl_ca=/etc/ssl/cert.pem"
-)
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 ssl_context = ssl.create_default_context(
     cafile=certifi.where()
