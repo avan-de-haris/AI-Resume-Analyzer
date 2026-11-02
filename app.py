@@ -61,52 +61,72 @@ def login():
 def dashboard():
     if "user" not in session:
         return redirect('/login')
+
     result = None
-    resume_text = None
-    user_goal = None
 
     if request.method == 'POST':
-        user_goal = request.form.get('role')
-        resume_text = request.form.get('resume')
-
+        user_goal = request.form.get('role', '').strip()
+        pasted_text = request.form.get('resume', '').strip()
         file = request.files.get('file')
-        # File handling
+
+        resume_text = ""
+
+        # 1. Process uploaded file first
         if file and file.filename != '':
-            if file.filename.endswith('.pdf'):
+            if file.filename.lower().endswith('.pdf'):
                 try:
                     pdf_reader = PyPDF2.PdfReader(file)
-                    text = ''
+                    text_parts = []
                     for page in pdf_reader.pages:
-                        text += page.extract_text()
-                    resume_text = text
+                        extracted = page.extract_text()
+                        if extracted:
+                            text_parts.append(extracted)
+                    resume_text = "\n".join(text_parts).strip()
                 except Exception as e:
                     result = {"error": f"Error reading PDF file: {str(e)}"}
-            
-            elif file.filename.endswith('.docx'):
+
+            elif file.filename.lower().endswith('.docx'):
                 try:
                     doc = docx.Document(file)
-                    text = ''
-                    for para in doc.paragraphs:
-                        text += para.text + '\n'
-                    resume_text = text
+                    resume_text = "\n".join([para.text for para in doc.paragraphs if para.text]).strip()
                 except Exception as e:
                     result = {"error": f"Error reading DOCX file: {str(e)}"}
             else:
                 result = {"error": "Unsupported file format. Please upload a PDF or DOCX file."}
 
-    if resume_text and user_goal:
-        try:
-            result = ai.analyze_resume(resume_text, user_goal)
+        # 2. Fall back to pasted textarea text if no file was uploaded
+        if not resume_text and pasted_text:
+            resume_text = pasted_text
 
-            # save the result to the database
+        # 3. Debug logging to terminal
+        print(f"DEBUG: user_goal = '{user_goal}'")
+        print(f"DEBUG: resume_text length = {len(resume_text)}")
+
+        # 4. Trigger AI Analysis
+        if resume_text and user_goal and not result:
             db = SessionLocal()
-            user = db.query(models.User).filter_by(email=session['user']).first()
+            try:
+                print("DEBUG: Sending request to AI...")
+                result = ai.analyze_resume(resume_text, user_goal)
+                print(f"DEBUG: AI result received: {result}")
 
-            report = models.Reports(user_id=user.id, resume_text=resume_text, result=json.dumps(result))
-            db.add(report)
-            db.commit()
-        except Exception as e:
-            result = {"error": f"AI Error: {str(e)}"}
+                # Save report to database
+                user = db.query(models.User).filter_by(email=session['user']).first()
+                if user:
+                    report = models.Reports(
+                        user_id=user.id,
+                        resume_text=resume_text,
+                        result=json.dumps(result)
+                    )
+                    db.add(report)
+                    db.commit()
+            except Exception as e:
+                db.rollback()
+                result = {"error": f"AI Error: {str(e)}"}
+            finally:
+                db.close()
+        elif not resume_text and not result:
+            result = {"error": "Please paste resume text or upload a valid PDF/DOCX file."}
 
     return render_template('dashboard.html', user=session['user'], result=result)
 

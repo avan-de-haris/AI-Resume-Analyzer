@@ -6,44 +6,48 @@
 <div class="card">
     <h3>Resume Analyser</h3>
 
-    <form method="POST" enctype="multipart/form-data">
-        <textarea name="resume_text" placeholder="Paste your resume here (optional)"></textarea>
+    <form method="POST" action="/dashboard" enctype="multipart/form-data">
+        <textarea name="resume" placeholder="Paste your resume here (optional)"></textarea>
         <p>OR upload a file:</p>
-        <input type="file" name="resume_file" accept=".pdf,.doc,.docx">
-        <input type="role" name="role" placeholder="Enter your desired role (e.g., Software Engineer, Data Scientist)" required>
+        <input type="file" name="file" accept=".pdf,.doc,.docx">
+        <input type="text" name="role" placeholder="Enter your desired role (e.g., Software Engineer, Data Scientist)" required>
         <button type="submit">Analyze Resume</button>
     </form>
 </div>
 
 {% if result %}
-<div class="red">
+<div class="result-box" style="margin-top: 20px;">
     {% if result.error %}
-        <p class="error">{{ result.error }}</p>
+        <p class="error" style="color: red; font-weight: bold;">{{ result.error }}</p>
     {% endif %}
-    <h3>skills</h3>
+
+    <h3>Skills</h3>
     <ul>
         {% for s in result.get('skills', []) %}
             <li>{{ s }}</li>
         {% endfor %}
     </ul>
+
     <h3>Missing Skills</h3>
     <ul>
         {% for s in result.get('missing_skills', []) %}
             <li>{{ s }}</li>
         {% endfor %}
     </ul>
+
     <h3>Roadmap</h3>
     <ul>
         {% for r in result.get('roadmap', []) %}
             <li>{{ r }}</li>
         {% endfor %}
     </ul>
+
     <h3>Interview Questions</h3>
     <ul>
         {% for q in result.get('interview_questions', []) %}
             <li>{{ q }}</li>
         {% endfor %}
+    </ul>
 </div>
-
-{% endif %} 
+{% endif %}
 {% endblock %}

@@ -1,69 +1,90 @@
+
 import os
 import json
 from dotenv import load_dotenv
 from openai import OpenAI
 
-
-load_dotenv()  # Load environment variables from .env file
+load_dotenv()
 
 client = OpenAI(
     api_key=os.getenv("OPENAI_API_KEY"),
     base_url=os.getenv("BASE_URL"),
-    timeout=30.0,
-    max_retries=0
-
+    timeout=180.0,
+    max_retries=2
 )
 
+
 def analyze_resume(resume_text, user_goal):
+
     prompt = f"""
-    you are a senior software engineer and a career coach. I will provide you with a resume and a user goal. Please analyze the resume and provide feedback on how well it aligns with the user's goal. Offer suggestions for improvement, highlight strengths, and identify any gaps or areas that need attention. Be specific and actionable in your feedback.
-    evaluate the resume based on users goal
-    user goal: "{user_goal}"
+You are a senior software engineer and career coach.
 
-    STRICT RULES:
-    - Extract only the relevant information that pertains to the user's goal.
-    - Remove irrelevant tools [excel for backend, etc]
-    - Identify real gaps
-    - Generate Roadmap only for missing feilds
-    - Make output Different based on the user goal
+Analyze the following resume for the user's desired career role.
 
-    Return only json:
-    {{
+Desired Role: {user_goal}
+
+STRICT RULES:
+1. Extract skills relevant to the desired role.
+2. Identify genuinely missing skills.
+3. Generate a learning roadmap only for missing skills.
+4. Generate relevant interview questions.
+5. Avoid irrelevant skills.
+6. Be specific and actionable.
+
+Return valid JSON using exactly this structure:
+
+{{
     "skills": [],
     "missing_skills": [],
     "roadmap": [],
     "interview_questions": []
+}}
 
-    }}
-    Resume:
-    {resume_text}
+RESUME:
+{resume_text}
+"""
 
-    """
     try:
-        response = client.chat.completions.create(
-            model="gemini-3.5-flash",
-            messages=[
-                {"role": "system", "content": "You are a strict hiring manager."},
-                {"role": "user", "content": prompt}
-            ],
-            response_format={
-                "type": "json_object"
-            }
-        )
-        content = response.choices[0].message.content.strip()
-        start = content.find('{')
-        end = content.rfind('}') + 1
-        if start != -1 and end != 0:
-            return json.loads(content[start:end])
+        print("DEBUG: Sending resume to Gemini...")
+        print("DEBUG: Resume length:", len(resume_text))
 
-        return json.loads(content)  # Return the parsed JSON response
+        response = client.chat.completions.create(
+            model="gemini-3.8-flash",
+            reasoning_effort="low",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are a professional hiring manager."
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+            response_format={"type": "json_object"}
+        )
+
+        content = response.choices[0].message.content
+
+        if not content:
+            raise ValueError("Gemini returned an empty response.")
+
+        result = json.loads(content)
+
+        print("DEBUG: Resume analysis completed successfully.")
+
+        return result
 
     except Exception as e:
-        return{
+
+        print("AI API ERROR:", repr(e))
+        print("STATUS CODE:", getattr(e, "status_code", None))
+        print("ERROR BODY:", getattr(e, "body", None))
+
+        return {
             "skills": [],
             "missing_skills": [],
             "roadmap": [],
             "interview_questions": [],
-            "error": f"Error analyzing resume: {str(e)}"
+            "error": str(e)
         }
-
