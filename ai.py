@@ -1,6 +1,18 @@
+import os
+import json
+from dotenv import load_dotenv
 from openai import OpenAI
 
-client = OpenAI()
+
+load_dotenv()  # Load environment variables from .env file
+
+client = OpenAI(
+    api_key=os.getenv("OPENAI_API_KEY"),
+    base_url=os.getenv("BASE_URL"),
+    timeout=30.0,
+    max_retries=0
+
+)
 
 def analyze_resume(resume_text, user_goal):
     prompt = f"""
@@ -20,7 +32,7 @@ def analyze_resume(resume_text, user_goal):
     "skills": [],
     "missing_skills": [],
     "roadmap": [],
-    "interview_questions": [],
+    "interview_questions": []
 
     }}
     Resume:
@@ -29,17 +41,22 @@ def analyze_resume(resume_text, user_goal):
     """
     try:
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gemini-3.5-flash",
             messages=[
                 {"role": "system", "content": "You are a strict hiring manager."},
                 {"role": "user", "content": prompt}
-            ]
+            ],
+            response_format={
+                "type": "json_object"
+            }
         )
-        return response.choices[0].message.content.strip() 
-
+        content = response.choices[0].message.content.strip()
         start = content.find('{')
         end = content.rfind('}') + 1
-        return json.loads(content[start:end])
+        if start != -1 and end != 0:
+            return json.loads(content[start:end])
+
+        return json.loads(content)  # Return the parsed JSON response
 
     except Exception as e:
         return{
