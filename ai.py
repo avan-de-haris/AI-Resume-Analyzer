@@ -17,7 +17,7 @@ client = OpenAI(
 def analyze_resume(resume_text, user_goal):
 
     prompt = f"""
-You are a senior software engineer and career coach.
+You are a senior hiring manager and career coach.
 
 Analyze the following resume for the user's desired career role.
 
