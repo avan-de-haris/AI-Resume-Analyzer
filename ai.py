@@ -49,7 +49,7 @@ RESUME:
         print("DEBUG: Resume length:", len(resume_text))
 
         response = client.chat.completions.create(
-            model="gemini-2.0-flash",
+            model="gemini-3.5-flash",
             reasoning_effort="low",
             messages=[
                 {
